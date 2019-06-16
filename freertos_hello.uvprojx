@@ -4050,7 +4050,7 @@
 --diag_suppress=1296,186 
  
 </MiscControls>
-              <Define>XIP_EXTERNAL_FLASH=1, XIP_BOOT_HEADER_ENABLE=1, NDEBUG, CPU_MIMXRT1062DVL6A, FSL_RTOS_FREE_RTOS</Define>
+              <Define>XIP_EXTERNAL_FLASH=1, XIP_BOOT_HEADER_ENABLE=1, NDEBUG, CPU_MIMXRT1062DVL6A, FSL_RTOS_FREE_RTOS, PRINTF_FLOAT_ENABLE=1, PRINTF_ADVANCED_ENABLE=1</Define>
               <Undefine></Undefine>
               <IncludePath>board;source;CMSIS;amazon-freertos/FreeRTOS/portable;amazon-freertos/include;component/lists;component/serial_manager;component/uart;device;doc;drivers;src;startup;utilities;xip</IncludePath>
             </VariousControls>
