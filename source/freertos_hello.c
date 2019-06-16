@@ -112,7 +112,7 @@
 #define KALYKE_LPSPI_CLOCK_SOURCE_DIVIDER (7U)
     
 #define KALYKE_LPSPI_MASTER_CLK_FREQ (CLOCK_GetFreq(kCLOCK_Usb1PllPfd0Clk) / (KALYKE_LPSPI_CLOCK_SOURCE_DIVIDER + 1U))
-#define KALYKE_LPSPI_TRANSFER_BAUDRATE 1000000U
+#define KALYKE_LPSPI_TRANSFER_BAUDRATE 900000U
 #define KALYKE_LPSPI_MASTER_PCS_FOR_INIT (kLPSPI_Pcs0)
 
 /* Task priorities. */
@@ -177,6 +177,28 @@ void hexdump(const void *p, size_t size)
 }
 
 // W25Q Flash : Read JEDEC ID (9Fh)
+void test_rtos_lpspi_read4(void)
+{
+    PRINTF("Read JEDEC ID (9Fh)\r\n");
+    memset(g_rx_buffer, 0, sizeof(g_rx_buffer));
+    memset(g_tx_buffer, 0, sizeof(g_tx_buffer));
+    g_tx_buffer[0] = 0x9F;
+    PRINTF("g_tx_buffer[0] = 0x%X\r\n", g_tx_buffer[0]);
+    //g_tx_buffer[0] <<= 1;
+    lpspi_transfer_t spi_transfer;
+    spi_transfer.txData = g_tx_buffer;
+    spi_transfer.rxData = g_rx_buffer;
+    spi_transfer.dataSize = 4;
+    //spi_transfer.configFlags = kLPSPI_MasterPcs0 | kLPSPI_MasterPcsContinuous | kLPSPI_MasterByteSwap;
+    //spi_transfer.configFlags = kLPSPI_MasterPcs0 | kLPSPI_MasterByteSwap;
+    spi_transfer.configFlags = kLPSPI_MasterPcs0 | kLPSPI_MasterPcsContinuous;
+    
+    status_t ret = LPSPI_RTOS_Transfer(&gSpiRtosHandle, &spi_transfer);
+    PRINTF("LPSPI_RTOS_Transfer return : %d\r\n", ret);
+    hexdump(g_rx_buffer, sizeof(g_rx_buffer));
+}
+
+// W25Q Flash : Read JEDEC ID (9Fh)
 void test_lpspi_read4(void)
 {
     PRINTF("Read JEDEC ID (9Fh)\r\n");
@@ -232,25 +254,47 @@ void test_lpspi_read2(void)
     spi_transfer.txData = g_tx_buffer;
     spi_transfer.rxData = g_rx_buffer;
     spi_transfer.dataSize = 13;
-    //spi_transfer.configFlags = kLPSPI_MasterPcs0 | kLPSPI_MasterPcsContinuous | kLPSPI_MasterByteSwap;
+    spi_transfer.configFlags = kLPSPI_MasterPcs0 | kLPSPI_MasterPcsContinuous | kLPSPI_MasterByteSwap;
     //spi_transfer.configFlags = kLPSPI_MasterPcs0 | kLPSPI_MasterByteSwap;
-    spi_transfer.configFlags = kLPSPI_MasterPcs0 | kLPSPI_MasterPcsContinuous;
+    //spi_transfer.configFlags = kLPSPI_MasterPcs0 | kLPSPI_MasterPcsContinuous;
     status_t ret = LPSPI_MasterTransferBlocking(KALYKE_SPI_BASE, &spi_transfer);
     PRINTF("LPSPI_MasterTransferBlocking return : %d\r\n", ret);
     hexdump(g_rx_buffer, sizeof(g_rx_buffer));
 }
 
-void test_lpspi_read(void)
+void test_lpspi_write_ads8668(void)
 {
+    PRINTF("Enter %s()\r\n", __func__);
     memset(g_rx_buffer, 0, sizeof(g_rx_buffer));
     memset(g_tx_buffer, 0, sizeof(g_tx_buffer));
-    g_tx_buffer[0] = ADS8668_PRG_HIGH_THRESHOLD_MSB_CH0 << 1;
+    g_tx_buffer[0] = ADS8668_PRG_HIGH_THRESHOLD_LSB_CH0 << 1;
+    g_tx_buffer[0] += 1;
     PRINTF("g_tx_buffer[0] = 0x%X\r\n", g_tx_buffer[0]);
-    //g_tx_buffer[0] <<= 1;
+    g_tx_buffer[1] = 0x8B;
+
     lpspi_transfer_t spi_transfer;
     spi_transfer.txData = g_tx_buffer;
     spi_transfer.rxData = g_rx_buffer;
-    spi_transfer.dataSize = 2;
+    spi_transfer.dataSize = 4;
+    spi_transfer.configFlags = kLPSPI_MasterPcs0 | kLPSPI_MasterPcsContinuous | kLPSPI_MasterByteSwap;
+    status_t ret = LPSPI_MasterTransferBlocking(KALYKE_SPI_BASE, &spi_transfer);
+    PRINTF("LPSPI_MasterTransferBlocking return : %d\r\n", ret);
+    hexdump(g_rx_buffer, sizeof(g_rx_buffer));
+}
+
+void test_lpspi_read_ads8668(void)
+{
+    PRINTF("Enter %s()\r\n", __func__);
+    memset(g_rx_buffer, 0, sizeof(g_rx_buffer));
+    memset(g_tx_buffer, 0, sizeof(g_tx_buffer));
+    g_tx_buffer[0] = ADS8668_PRG_HIGH_THRESHOLD_LSB_CH0 << 1;
+    //g_tx_buffer[0] = ADS8668_PRG_HIGH_THRESHOLD_MSB_CH0 << 1;
+    PRINTF("g_tx_buffer[0] = 0x%X\r\n", g_tx_buffer[0]);
+
+    lpspi_transfer_t spi_transfer;
+    spi_transfer.txData = g_tx_buffer;
+    spi_transfer.rxData = g_rx_buffer;
+    spi_transfer.dataSize = 4;
     spi_transfer.configFlags = kLPSPI_MasterPcs0 | kLPSPI_MasterPcsContinuous | kLPSPI_MasterByteSwap;
     status_t ret = LPSPI_MasterTransferBlocking(KALYKE_SPI_BASE, &spi_transfer);
     PRINTF("LPSPI_MasterTransferBlocking return : %d\r\n", ret);
@@ -258,6 +302,50 @@ void test_lpspi_read(void)
 }
 
 void kalyke_lpspi_init_ADS8668(void)
+{
+    PRINTF("Enter %s()\r\n", __func__);
+    NVIC_SetPriority(LPSPI3_IRQn, 5);
+
+    /*Set clock source for LPSPI*/
+    CLOCK_SetMux(kCLOCK_LpspiMux, KALYKE_LPSPI_CLOCK_SOURCE_SELECT);
+    CLOCK_SetDiv(kCLOCK_LpspiDiv, KALYKE_LPSPI_CLOCK_SOURCE_DIVIDER);
+
+    uint32_t srcClock_Hz = KALYKE_LPSPI_MASTER_CLK_FREQ;
+    PRINTF("srcClock_Hz = %u\r\n", srcClock_Hz);
+    lpspi_master_config_t masterConfig;
+    /*Master config*/
+    masterConfig.baudRate = KALYKE_LPSPI_TRANSFER_BAUDRATE;
+    masterConfig.bitsPerFrame = 8;
+    
+    masterConfig.cpol = kLPSPI_ClockPolarityActiveHigh;
+    masterConfig.cpha = kLPSPI_ClockPhaseSecondEdge;
+
+    masterConfig.direction = kLPSPI_MsbFirst;
+
+    masterConfig.pcsToSckDelayInNanoSec = 1000000000 / masterConfig.baudRate;
+    //masterConfig.pcsToSckDelayInNanoSec = 0;
+    masterConfig.lastSckToPcsDelayInNanoSec = 1000000000 / masterConfig.baudRate;
+    //masterConfig.lastSckToPcsDelayInNanoSec = 0;
+    masterConfig.betweenTransferDelayInNanoSec = 1000000000 / masterConfig.baudRate;
+    //masterConfig.betweenTransferDelayInNanoSec = 0;
+    
+    masterConfig.whichPcs = KALYKE_LPSPI_MASTER_PCS_FOR_INIT;
+    masterConfig.pcsActiveHighOrLow = kLPSPI_PcsActiveLow;
+
+    masterConfig.pinCfg = kLPSPI_SdiInSdoOut;
+    masterConfig.dataOutConfig = kLpspiDataOutTristate;
+
+    LPSPI_MasterInit(KALYKE_SPI_BASE, &masterConfig, srcClock_Hz);
+
+    //test_lpspi_read();
+    //test_lpspi_read2();
+    //test_lpspi_read3();
+    //test_lpspi_read4();
+    //test_lpspi_read_ads8668();
+    test_lpspi_write_ads8668();
+}
+
+void kalyke_rtos_lpspi_init_ADS8668(void)
 {
     PRINTF("Enter %s()\r\n", __func__);
     NVIC_SetPriority(LPSPI3_IRQn, 5);
@@ -289,12 +377,10 @@ void kalyke_lpspi_init_ADS8668(void)
     masterConfig.pinCfg = kLPSPI_SdiInSdoOut;
     masterConfig.dataOutConfig = kLpspiDataOutTristate;
 
-    LPSPI_MasterInit(KALYKE_SPI_BASE, &masterConfig, srcClock_Hz);
+    status_t ret = LPSPI_RTOS_Init(&gSpiRtosHandle, KALYKE_SPI_BASE, &masterConfig, srcClock_Hz);
+    PRINTF("LPSPI_RTOS_Init return : %d\r\n", ret);
 
-    //test_lpspi_read();
-    test_lpspi_read2();
-    test_lpspi_read3();
-    test_lpspi_read4();
+    test_rtos_lpspi_read4();
 }
 
 /*!
@@ -306,11 +392,13 @@ static void hello_task(void *pvParameters)
 
     vTaskDelay(4000);
     kalyke_lpspi_init_ADS8668();
+    //kalyke_rtos_lpspi_init_ADS8668();
     for (;;)
     {
         PRINTF("Hello world.\r\n");
-        vTaskDelay(100000);
-        test_lpspi_read2();
+        vTaskDelay(10000);
+        //test_lpspi_read2();
+        test_lpspi_read_ads8668();
     }
 }
 
