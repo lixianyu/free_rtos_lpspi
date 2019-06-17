@@ -42,21 +42,44 @@
 #define ADS8668_CMD_MAN_CH7   0xDC
 #define ADS8668_CMD_MAN_AUX   0xE0
     
-    
+
 #define ADS8668_PRG_AUTO_SEQ_EN  0x01
 #define ADS8668_PRG_CH_PWR_DN    0x02
-    
 #define ADS8668_PRG_FEATURE_SEL  0x03
 #define ADS8668_PRG_RANGE_CH0    0x05
-    
-    /* ALARM FLAG REGISTERS (Read-Only) */
+
+#define AUTO_SEQ_DN_CH0_MASK    0x01
+#define AUTO_SEQ_DN_CH1_MASK    0x02
+#define AUTO_SEQ_DN_CH2_MASK    0x04
+#define AUTO_SEQ_DN_CH3_MASK    0x08
+#define AUTO_SEQ_DN_CH4_MASK    0x10
+#define AUTO_SEQ_DN_CH5_MASK    0x20
+#define AUTO_SEQ_DN_CH6_MASK    0x40
+#define AUTO_SEQ_DN_CH7_MASK    0x80
+
+// For Kalyke project, Vref is 4096mV
+#define INPUT_RANGE_POSITIVE_NEGATIVE_2_POINT_5_MULTIPLY_VREF     0x00 //¡À10.24V
+#define INPUT_RANGE_POSITIVE_NEGATIVE_1_POINT_25_MULTIPLY_VREF    0x01 //¡À5.12V
+#define INPUT_RANGE_POSITIVE_NEGATIVE_0_POINT_625_MULTIPLY_VREF   0x02 //¡À2.56V
+#define INPUT_RANGE_POSITIVE_NEGATIVE_0_POINT_3125_MULTIPLY_VREF  0x03 //¡À1.28V
+#define INPUT_RANGE_POSITIVE_NEGATIVE_0_POINT_15625_MULTIPLY_VREF 0x0B //¡À0.64V
+#define INPUT_RANGE_POSITIVE_2_POINT_5_MULTIPLY_VREF              0x05 //0 ~ 10.24V
+#define INPUT_RANGE_POSITIVE_1_POINT_25_MULTIPLY_VREF             0x06 //0 ~ 5.12V
+#define INPUT_RANGE_POSITIVE_0_POINT_625_MULTIPLY_VREF            0x07 //0 ~ 2.56V
+#define INPUT_RANGE_POSITIVE_0_POINT_3125_MULTIPLY_VREF           0x0F //0 ~ 1.28V
+
+
+
+// The following program register no use for Kalyke project
+#if 1
+/* ALARM FLAG REGISTERS (Read-Only) */
 #define ADS8668_PRG_TRIP_ALL     0x10 //ALARM Overview Tripped-Flag
 #define ADS8668_PRG_TRIP0        0x11 //ALARM Ch 0-3 Tripped-Flag
 #define ADS8668_PRG_ACTIVE0      0x12 //ALARM Ch 0-3 Active-Flag
 #define ADS8668_PRG_TRIP1        0x13 //ALARM Ch 4-7 Tripped-Flag
 #define ADS8668_PRG_ACTIVE1      0x14 //ALARM Ch 4-7 Active-Flag
-    
-    /* ALARM THRESHOLD REGISTERS */
+
+/* ALARM THRESHOLD REGISTERS */
 #define ADS8668_PRG_HYSTERESIS_CH0         0x15 //Ch 0 Hysteresis
 #define ADS8668_PRG_HIGH_THRESHOLD_MSB_CH0 0x16
 #define ADS8668_PRG_HIGH_THRESHOLD_LSB_CH0 0x17
@@ -104,6 +127,7 @@
 #define ADS8668_PRG_HIGH_THRESHOLD_LSB_CH7 0x3A
 #define ADS8668_PRG_LOW_THRESHOLD_MSB_CH7  0x3B
 #define ADS8668_PRG_LOW_THRESHOLD_LSB_CH7  0x3C
+#endif
 
 #define KALYKE_SPI_BASE    LPSPI1
     /* Select USB1 PLL PFD0 (720 MHz) as lpspi clock source */
@@ -270,7 +294,7 @@ void test_lpspi_write_ads8668(void)
     g_tx_buffer[0] = ADS8668_PRG_HIGH_THRESHOLD_LSB_CH0 << 1;
     g_tx_buffer[0] += 1;
     PRINTF("g_tx_buffer[0] = 0x%X\r\n", g_tx_buffer[0]);
-    g_tx_buffer[1] = 0x8B;
+    g_tx_buffer[1] = 0x1B;
 
     lpspi_transfer_t spi_transfer;
     spi_transfer.txData = g_tx_buffer;
@@ -304,7 +328,7 @@ void test_lpspi_read_ads8668(void)
 void kalyke_lpspi_init_ADS8668(void)
 {
     PRINTF("Enter %s()\r\n", __func__);
-    NVIC_SetPriority(LPSPI3_IRQn, 5);
+    NVIC_SetPriority(LPSPI3_IRQn, 3);
 
     /*Set clock source for LPSPI*/
     CLOCK_SetMux(kCLOCK_LpspiMux, KALYKE_LPSPI_CLOCK_SOURCE_SELECT);
@@ -345,10 +369,79 @@ void kalyke_lpspi_init_ADS8668(void)
     test_lpspi_write_ads8668();
 }
 
+void kalyke_AD_convert(lpspi_transfer_t *ptf)
+{
+    PRINTF("Enter %s()\r\n", __func__);
+    memset(g_rx_buffer, 0, sizeof(g_rx_buffer));
+    g_tx_buffer[0] = ADS8668_CMD_NO_OP;
+    g_tx_buffer[1] = 0x00;
+    status_t ret = LPSPI_RTOS_Transfer(&gSpiRtosHandle, ptf);
+    PRINTF("LPSPI_RTOS_Transfer return : %d, cmd=%X\r\n", ret, g_tx_buffer[0]>>1);
+    hexdump(g_rx_buffer, sizeof(g_rx_buffer));
+
+    uint16_t ad = (g_rx_buffer[2] << 4) | (g_rx_buffer[3] >> 4);
+    uint8_t chAddress = g_rx_buffer[4] >> 4;
+    uint8_t inputRange = ((g_rx_buffer[4] & 0x03) << 1) | (g_rx_buffer[5] >> 7);
+    PRINTF("ad = %u(0x%X), chAddress = %u, inputRange = %u\r\n", ad, ad, chAddress, inputRange);
+}
+
+void kalyke_config_ADS8668(void)
+{
+    PRINTF("Enter %s()\r\n", __func__);
+    memset(g_rx_buffer, 0, sizeof(g_rx_buffer));
+    memset(g_tx_buffer, 0, sizeof(g_tx_buffer));
+    g_tx_buffer[0] = (ADS8668_PRG_AUTO_SEQ_EN << 1) | 1;
+    PRINTF("g_tx_buffer[0] = 0x%X\r\n", g_tx_buffer[0]);
+    g_tx_buffer[1] = AUTO_SEQ_DN_CH0_MASK | AUTO_SEQ_DN_CH1_MASK;
+
+    lpspi_transfer_t spi_transfer;
+    spi_transfer.txData = g_tx_buffer;
+    spi_transfer.rxData = g_rx_buffer;
+    spi_transfer.dataSize = 4;
+    spi_transfer.configFlags = kLPSPI_MasterPcs0 | kLPSPI_MasterPcsContinuous | kLPSPI_MasterByteSwap;
+
+    status_t ret = LPSPI_RTOS_Transfer(&gSpiRtosHandle, &spi_transfer);
+    PRINTF("LPSPI_RTOS_Transfer return : %d, cmd=%X\r\n", ret, g_tx_buffer[0]>>1);
+    hexdump(g_rx_buffer, sizeof(g_rx_buffer));
+
+    g_tx_buffer[0] = (ADS8668_PRG_CH_PWR_DN << 1) | 1;
+    g_tx_buffer[1] = ~g_tx_buffer[1];
+    memset(g_rx_buffer, 0, sizeof(g_rx_buffer));
+    ret = LPSPI_RTOS_Transfer(&gSpiRtosHandle, &spi_transfer);
+    PRINTF("LPSPI_RTOS_Transfer return : %d, cmd=%X\r\n", ret, g_tx_buffer[0]>>1);
+    hexdump(g_rx_buffer, sizeof(g_rx_buffer));
+
+    g_tx_buffer[0] = (ADS8668_PRG_FEATURE_SEL << 1) | 1;
+    g_tx_buffer[1] = 0x03;
+    memset(g_rx_buffer, 0, sizeof(g_rx_buffer));
+    ret = LPSPI_RTOS_Transfer(&gSpiRtosHandle, &spi_transfer);
+    PRINTF("LPSPI_RTOS_Transfer return : %d, cmd=%X\r\n", ret, g_tx_buffer[0]>>1);
+    hexdump(g_rx_buffer, sizeof(g_rx_buffer));
+
+
+    g_tx_buffer[1] = INPUT_RANGE_POSITIVE_2_POINT_5_MULTIPLY_VREF;
+    for (uint8_t i = 0; i < 8; i++)
+    {
+        memset(g_rx_buffer, 0, sizeof(g_rx_buffer));
+        g_tx_buffer[0] = ((ADS8668_PRG_RANGE_CH0 + i) << 1) | 1;
+        ret = LPSPI_RTOS_Transfer(&gSpiRtosHandle, &spi_transfer);
+        PRINTF("LPSPI_RTOS_Transfer return : %d, cmd=%X\r\n", ret, g_tx_buffer[0]>>1);
+        hexdump(g_rx_buffer, sizeof(g_rx_buffer));
+    }
+
+    memset(g_rx_buffer, 0, sizeof(g_rx_buffer));
+    g_tx_buffer[0] = ADS8668_CMD_AUTO_RST;
+    g_tx_buffer[1] = 0x00;
+    spi_transfer.dataSize = 6;
+    ret = LPSPI_RTOS_Transfer(&gSpiRtosHandle, &spi_transfer);
+    PRINTF("LPSPI_RTOS_Transfer return : %d, cmd=%X\r\n", ret, g_tx_buffer[0]>>1);
+    hexdump(g_rx_buffer, sizeof(g_rx_buffer));
+}
+
 void kalyke_rtos_lpspi_init_ADS8668(void)
 {
     PRINTF("Enter %s()\r\n", __func__);
-    NVIC_SetPriority(LPSPI3_IRQn, 5);
+    NVIC_SetPriority(LPSPI1_IRQn, 5);
 
     /*Set clock source for LPSPI*/
     CLOCK_SetMux(kCLOCK_LpspiMux, KALYKE_LPSPI_CLOCK_SOURCE_SELECT);
@@ -360,7 +453,7 @@ void kalyke_rtos_lpspi_init_ADS8668(void)
     /*Master config*/
     masterConfig.baudRate = KALYKE_LPSPI_TRANSFER_BAUDRATE;
     masterConfig.bitsPerFrame = 8;
-    masterConfig.cpol = kLPSPI_ClockPolarityActiveLow;
+    masterConfig.cpol = kLPSPI_ClockPolarityActiveHigh;
     masterConfig.cpha = kLPSPI_ClockPhaseSecondEdge;
     masterConfig.direction = kLPSPI_MsbFirst;
 
@@ -380,7 +473,8 @@ void kalyke_rtos_lpspi_init_ADS8668(void)
     status_t ret = LPSPI_RTOS_Init(&gSpiRtosHandle, KALYKE_SPI_BASE, &masterConfig, srcClock_Hz);
     PRINTF("LPSPI_RTOS_Init return : %d\r\n", ret);
 
-    test_rtos_lpspi_read4();
+    //test_rtos_lpspi_read4();
+    kalyke_config_ADS8668();
 }
 
 /*!
@@ -391,14 +485,21 @@ static void hello_task(void *pvParameters)
     PRINTF("hello_task RUN. Free heap size is %d bytes\r\n", xPortGetFreeHeapSize());
 
     vTaskDelay(4000);
-    kalyke_lpspi_init_ADS8668();
-    //kalyke_rtos_lpspi_init_ADS8668();
+    //kalyke_lpspi_init_ADS8668();
+    kalyke_rtos_lpspi_init_ADS8668();
+
+    lpspi_transfer_t spi_transfer;
+    spi_transfer.txData = g_tx_buffer;
+    spi_transfer.rxData = g_rx_buffer;
+    spi_transfer.dataSize = 6;
+    spi_transfer.configFlags = kLPSPI_MasterPcs0 | kLPSPI_MasterPcsContinuous | kLPSPI_MasterByteSwap;
     for (;;)
     {
         PRINTF("Hello world.\r\n");
-        vTaskDelay(10000);
+        vTaskDelay(4500);
         //test_lpspi_read2();
-        test_lpspi_read_ads8668();
+        //test_lpspi_read_ads8668();
+        kalyke_AD_convert(&spi_transfer);
     }
 }
 
