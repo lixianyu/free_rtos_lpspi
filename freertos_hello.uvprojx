@@ -849,6 +849,16 @@
               <FileType>5</FileType>
               <FilePath>source/FreeRTOSConfig.h</FilePath>
             </File>
+            <File>
+              <FileName>i2c_task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\source\i2c_task.c</FilePath>
+            </File>
+            <File>
+              <FileName>i2c_task.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\source\i2c_task.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1776,6 +1786,16 @@
               <FileName>FreeRTOSConfig.h</FileName>
               <FileType>5</FileType>
               <FilePath>source/FreeRTOSConfig.h</FilePath>
+            </File>
+            <File>
+              <FileName>i2c_task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\source\i2c_task.c</FilePath>
+            </File>
+            <File>
+              <FileName>i2c_task.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\source\i2c_task.h</FilePath>
             </File>
           </Files>
         </Group>
@@ -2705,6 +2725,16 @@
               <FileType>5</FileType>
               <FilePath>source/FreeRTOSConfig.h</FilePath>
             </File>
+            <File>
+              <FileName>i2c_task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\source\i2c_task.c</FilePath>
+            </File>
+            <File>
+              <FileName>i2c_task.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\source\i2c_task.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -3632,6 +3662,16 @@
               <FileType>5</FileType>
               <FilePath>source/FreeRTOSConfig.h</FilePath>
             </File>
+            <File>
+              <FileName>i2c_task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\source\i2c_task.c</FilePath>
+            </File>
+            <File>
+              <FileName>i2c_task.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\source\i2c_task.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -3764,7 +3804,7 @@
           <CreateLib>0</CreateLib>
           <CreateHexFile>0</CreateHexFile>
           <DebugInformation>0</DebugInformation>
-          <BrowseInformation>0</BrowseInformation>
+          <BrowseInformation>1</BrowseInformation>
           <ListingPath>.\output\</ListingPath>
           <HexFormatSelection>1</HexFormatSelection>
           <Merge32K>0</Merge32K>
@@ -4565,6 +4605,16 @@
               <FileName>FreeRTOSConfig.h</FileName>
               <FileType>5</FileType>
               <FilePath>source/FreeRTOSConfig.h</FilePath>
+            </File>
+            <File>
+              <FileName>i2c_task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\source\i2c_task.c</FilePath>
+            </File>
+            <File>
+              <FileName>i2c_task.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\source\i2c_task.h</FilePath>
             </File>
           </Files>
         </Group>
@@ -5494,6 +5544,16 @@
               <FileName>FreeRTOSConfig.h</FileName>
               <FileType>5</FileType>
               <FilePath>source/FreeRTOSConfig.h</FilePath>
+            </File>
+            <File>
+              <FileName>i2c_task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\source\i2c_task.c</FilePath>
+            </File>
+            <File>
+              <FileName>i2c_task.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\source\i2c_task.h</FilePath>
             </File>
           </Files>
         </Group>

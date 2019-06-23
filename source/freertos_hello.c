@@ -22,6 +22,7 @@
 #include "pin_mux.h"
 #include "clock_config.h"
 
+#include "i2c_task.h"
 
 /*******************************************************************************
  * Definitions
@@ -514,12 +515,21 @@ int main(void)
     BOARD_InitPins();
     BOARD_BootClockRUN();
     BOARD_InitDebugConsole();
+    #if 0
     if (xTaskCreate(hello_task, "Hello_task", configMINIMAL_STACK_SIZE + 10, NULL, hello_task_PRIORITY, NULL) != pdPASS)
     {
         PRINTF("Task creation failed!.\r\n");
         while (1)
             ;
     }
+    #else
+    if (xTaskCreate(i2c_task, "i2c_task", configMINIMAL_STACK_SIZE + 10, NULL, hello_task_PRIORITY, NULL) != pdPASS)
+    {
+        PRINTF("i2c_task creation failed!.\r\n");
+        while (1)
+            ;
+    }
+    #endif
     vTaskStartScheduler();
     for (;;)
         ;
