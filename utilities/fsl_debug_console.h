@@ -72,6 +72,42 @@
 #define SCANF DbgConsole_Scanf
 #define PUTCHAR DbgConsole_Putchar
 #define GETCHAR DbgConsole_Getchar
+
+#define LOG_LOCAL_LEVEL  5
+typedef enum {
+    ESP_LOG_NONE,       /*!< No log output */
+    ESP_LOG_ERROR,      /*!< Critical errors, software module can not recover on its own */
+    ESP_LOG_WARN,       /*!< Error conditions from which recovery measures have been taken */
+    ESP_LOG_INFO,       /*!< Information messages which describe normal flow of events */
+    ESP_LOG_DEBUG,      /*!< Extra information which is not necessary for normal use (values, pointers, sizes, etc). */
+    ESP_LOG_VERBOSE     /*!< Bigger chunks of debugging information, or frequent messages which can potentially flood the output. */
+} esp_log_level_t;
+
+#define LOG_COLOR_BLACK   "30"
+#define LOG_COLOR_RED     "31"
+#define LOG_COLOR_GREEN   "32"
+#define LOG_COLOR_BROWN   "33"
+#define LOG_COLOR_BLUE    "34"
+#define LOG_COLOR_PURPLE  "35"
+#define LOG_COLOR_CYAN    "36"
+
+#define LOG_COLOR(COLOR)  "\033[0;" COLOR "m"
+#define LOG_BOLD(COLOR)   "\033[1;" COLOR "m"
+#define LOG_RESET_COLOR   "\033[0m"
+#define LOG_COLOR_E       LOG_COLOR(LOG_COLOR_RED)
+#define LOG_COLOR_W       LOG_COLOR(LOG_COLOR_BROWN)
+#define LOG_COLOR_I       LOG_COLOR(LOG_COLOR_GREEN)
+#define LOG_COLOR_D       LOG_COLOR(LOG_COLOR_BLACK)
+#define LOG_COLOR_V       LOG_BOLD(LOG_COLOR_BLACK)
+
+#define LOG_FORMAT(letter, format)  LOG_COLOR_ ## letter #letter " (%d) %s: " format LOG_RESET_COLOR "\r\n"
+
+#define LOGE( tag, format, ... )  if (LOG_LOCAL_LEVEL >= ESP_LOG_ERROR)   { DbgConsole_Printf(LOG_FORMAT(E, format), xTaskGetTickCount(), tag, ##__VA_ARGS__); }
+#define LOGW( tag, format, ... )  if (LOG_LOCAL_LEVEL >= ESP_LOG_ERROR)   { DbgConsole_Printf(LOG_FORMAT(W, format), xTaskGetTickCount(), tag, ##__VA_ARGS__); }
+#define LOGI( tag, format, ... )  if (LOG_LOCAL_LEVEL >= ESP_LOG_ERROR)   { DbgConsole_Printf(LOG_FORMAT(I, format), xTaskGetTickCount(), tag, ##__VA_ARGS__); }
+#define LOGD( tag, format, ... )  if (LOG_LOCAL_LEVEL >= ESP_LOG_ERROR)   { DbgConsole_Printf(LOG_FORMAT(D, format), xTaskGetTickCount(), tag, ##__VA_ARGS__); }
+#define LOGV( tag, format, ... )  if (LOG_LOCAL_LEVEL >= ESP_LOG_ERROR)   { DbgConsole_Printf(LOG_FORMAT(V, format), xTaskGetTickCount(), tag, ##__VA_ARGS__); }
+
 #elif SDK_DEBUGCONSOLE == DEBUGCONSOLE_REDIRECT_TO_TOOLCHAIN /* Select printf, scanf, putchar, getchar of toolchain. \ \
                                                                 */
 #define PRINTF printf

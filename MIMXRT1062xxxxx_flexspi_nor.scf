@@ -81,6 +81,11 @@ LR_m_text m_interrupts_start m_text_start+m_text_size-m_interrupts_start {   ; l
     .ANY (+RW +ZI)
     * (NonCacheable.init)
     * (NonCacheable)
+    
+    i2c_task.o
+    freertos_hello.o
+    fsl_lpi2c.o
+    fsl_lpi2c_freertos.o
   }
   ARM_LIB_HEAP +0 EMPTY Heap_Size {    ; Heap region growing up
   }

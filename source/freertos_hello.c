@@ -505,6 +505,7 @@ static void hello_task(void *pvParameters)
 }
 
 
+#define SW_VERSION  "0.0.624.01"
 /*!
  * @brief Application entry point.
  */
@@ -515,6 +516,7 @@ int main(void)
     BOARD_InitPins();
     BOARD_BootClockRUN();
     BOARD_InitDebugConsole();
+    PRINTF("SW_VERSION = %s\r\n", SW_VERSION);
     #if 0
     if (xTaskCreate(hello_task, "Hello_task", configMINIMAL_STACK_SIZE + 10, NULL, hello_task_PRIORITY, NULL) != pdPASS)
     {
